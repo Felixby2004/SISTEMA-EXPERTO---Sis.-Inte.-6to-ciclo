@@ -1,13 +1,14 @@
 # base_conocimiento.py
-# ======================================
-# BASE DE CONOCIMIENTO - Políticas Crediticias (BCP-style)
-# ======================================
+
+# BASE DE CONOCIMIENTO - Políticas Crediticias 
+
 
 from rule_engine import Rule
 
 """
-Políticas basadas en criterios de precalificación utilizados en banca retail peruana.
-Las expresiones deben ser compatibles con rule-engine (usa sintaxis tipo Python/JSON).
+Criterios de precalificación utilizados en banca retail peruana.
+(gentita, no olvidar esto) -> Las expresiones deben ser compatibles con rule-engine 
+(usa sintaxis tipo Python/JSON).
 """
 
 reglas = [

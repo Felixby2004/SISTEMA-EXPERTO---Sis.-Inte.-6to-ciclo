@@ -1,14 +1,11 @@
 # base_hechos.py
-# ======================================
 # BASE DE HECHOS - Clase Cliente e instancias simuladas
-# ======================================
 
 from typing import Dict
 
 class Cliente:
     """
     Representa a un cliente con los atributos usados por las reglas.
-    Proporciona to_dict() para evaluación por rule-engine (que usa dicts).
     """
     def __init__(self,
                  nombre: str,
@@ -56,7 +53,6 @@ class Cliente:
     def to_dict(self) -> Dict:
         """
         Devuelve un diccionario plano con los atributos.
-        Útil para pasar a rule-engine: Rule.matches(vars(cliente)) o Rule.matches(cliente.to_dict()).
         """
         return {
             "nombre": self.nombre,
@@ -77,9 +73,7 @@ class Cliente:
     def __repr__(self):
         return f"<Cliente {self.nombre} | ingresos={self.ingresos} deudas={self.deudas} puntaje={self.puntaje_crediticio}>"
 
-# ======================================================
 # Instancias simuladas (10 clientes) - lista 'clientes_obj'
-# ======================================================
 clientes_obj = [
     Cliente("Ana Torres", 28, 1500, 200, 0, 2, "independiente", True, 750, 2000, ahorros=600, empleo_estable=True, estado_civil="soltero"),
     Cliente("Imanol Ramos", 35, 900, 400, 1, 1, "dependiente", False, 500, 1500, ahorros=100, empleo_estable=True, estado_civil="casado"),
