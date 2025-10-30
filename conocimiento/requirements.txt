@@ -1,0 +1,4 @@
+streamlit
+rule-engine
+pytest
+rule-engine==4.7.0
