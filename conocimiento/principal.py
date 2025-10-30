@@ -26,28 +26,38 @@ def evaluar_cliente(cliente):
     return resultados
 
 # MOSTRAR RESULTADOS
-
 def mostrar_resultados(cliente, resultados):
-    """se imprimen los resultados de cada cliente evaluado."""
-    print("=" * 60)
-    print(f"Evaluación de crédito: {cliente.nombre}")
-    print("-" * 60)
+    """Muestra el resultado de evaluación con razones ordenadas por severidad."""
 
-    aprobadas = [r for r in resultados if r["cumple"]]
+    # Diccionario para ordenar severidades
+    niveles = {"alta": 3, "media": 2, "baja": 1}
+
+    # Filtrar reglas no cumplidas
     rechazadas = [r for r in resultados if not r["cumple"]]
+    rechazadas.sort(key=lambda r: niveles.get(r["severidad"].lower(), 0), reverse=True)
 
-    if len(rechazadas) == 0:
-        print("Cliente PRE-APROBADO.")
+    # Determinar estado final según severidad más alta
+    if not rechazadas:
+        estado = "✅ APROBADO"
+        print(f"{cliente.nombre} --> {estado}")
     else:
-        print("Cliente NO PRE-APROBADO.")
-        print("\nMotivos de rechazo:")
-        for r in rechazadas:
-            print(f" - [{r['codigo']}] {r['descripcion']} ({r['severidad']})")
-            print(f"Recomendación: {r['recomendacion']}")
+        severidad_max = rechazadas[0]["severidad"].lower()
+        if severidad_max == "alta":
+            estado = "❌ NO APROBADO"
+        elif severidad_max == "media":
+            estado = "🚫 NO APROBADO (riesgo moderado)"
+        else:
+            estado = "⚠️ PRE-APROBADO CON OBSERVACIONES"
 
-    print("\nResumen:")
-    print(f"Cumple {len(aprobadas)}/{len(resultados)} reglas")
-    print("=" * 60 + "\n")
+        # Mostrar resultado principal
+        print(f"{cliente.nombre} --> {estado} porque:")
+
+        # Mostrar razones de rechazo ordenadas por severidad
+        for r in rechazadas:
+            print(f"   - {r['descripcion']} [{r['severidad'].upper()}]")
+
+    print("=" * 60)
+
 
 # MAIN LOOP
 def main():
