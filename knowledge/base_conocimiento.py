@@ -1,10 +1,6 @@
 # base_conocimiento.py
 
-# BASE DE CONOCIMIENTO - Políticas Crediticias 
-
-
-from rule_engine import Rule
-
+# BASE DE CONOCIMIENTO - Políticas Crediticias
 """
 Criterios de precalificación utilizados en banca retail peruana.
 (gentita, no olvidar esto) -> Las expresiones deben ser compatibles con rule-engine 
