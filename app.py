@@ -6,7 +6,7 @@ import time
 from knowledge.base_conocimiento import reglas
 from engine.base_hechos import clientes_obj
 from rule_engine import Rule
-from principal import test_inferencia_correcta, test_caso_borde, test_explicacion
+from principal import test_inferencia_correcta, test_caso_borde, test_explicacion, evaluar_cliente
 
 st.set_page_config(page_title="Precalificador de Créditos BCP", page_icon="💳", layout="wide")
 
@@ -165,22 +165,6 @@ st.markdown("##### ⚠️ AVISO: No uso directo en producción. Este sistema da 
 st.markdown("<hr style='border-bottom: 1px solid #F47A31;'>", unsafe_allow_html=True)
 
 modo = st.radio("Seleccionar vista:", ["👥 Lista de Clientes", "🧪 Tests"], horizontal=True)
-
-
-def evaluar_cliente(cliente):
-    resultados = []
-    datos = cliente.to_dict()
-    for r in reglas:
-        regla = Rule(r["expresion"])
-        cumple = regla.matches(datos)
-        resultados.append({
-            "codigo": r["codigo"],
-            "descripcion": r["descripcion"],
-            "cumple": cumple,
-            "severidad": r["severidad"],
-            "recomendacion": r["recomendacion"]
-        })
-    return resultados
 
 
 def obtener_conclusion(resultados):
