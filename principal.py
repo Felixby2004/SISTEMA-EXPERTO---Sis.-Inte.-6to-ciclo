@@ -1,6 +1,7 @@
 # aca ta el principal main.py
 # MOTOR DE INFERENCIA - Sistema Experto: Precalificador de Crédito
 
+import pytest
 from rule_engine import Rule
 from knowledge.base_conocimiento import *
 from engine.base_hechos import *
@@ -61,43 +62,33 @@ def mostrar_resultados(cliente, resultados):
 
 # TEST (pytest)
 def test_inferencia_correcta():
-    # CLIENTE ESPERADO: NO APROBADO (La regla de MORA se dispara)
-    print("\n--- Ejecutando Test: Inferencia Correcta (NO APROBADO por Mora) ---")
     cliente = Cliente("Juan Pérez", 35, 2500, 500, True, 5, "dependiente", True, 700, 3000, ahorros=500, empleo_estable=True, estado_civil="casado")
     resultados = evaluar_cliente(cliente)
-    mostrar_resultados(cliente, resultados)
+    rechazadas = [r for r in resultados if not r["cumple"]]
+    assert any("mora" in r["descripcion"].lower() for r in rechazadas), "Debería fallar por MORA activa."
 
 
 def test_caso_borde():
-    # CLIENTE ESPERADO: APROBADO (Datos balanceados que pasan por poco o justo)
-    print("\n--- Ejecutando Test: Caso Borde (APROBADO) ---")
     cliente = Cliente("María López", 28, 1500, 200, False, 2, "independiente", True, 750, 2000, ahorros=600, empleo_estable=True, estado_civil="soltero")
     resultados = evaluar_cliente(cliente)
-    mostrar_resultados(cliente, resultados)
+    rechazadas = [r for r in resultados if not r["cumple"]]
+    assert len(rechazadas) == 0, "Debería ser APROBADO (sin fallas)."
 
 
 def test_explicacion():
-    # CLIENTE ESPERADO: NO APROBADO (La regla de PUNTAJE BAJO se dispara, forzando explicación)
-    print("\n--- Ejecutando Test: Explicación (Fallo por Puntaje) ---")
     cliente = Cliente("Pedro Ruiz", 40, 1000, 200, False, 10, "independiente", False, 600, 500, ahorros=1000, empleo_estable=True, estado_civil="casado")
     resultados = evaluar_cliente(cliente)
-    mostrar_resultados(cliente, resultados)
+    rechazadas = [r for r in resultados if not r["cumple"]]
+    assert any("puntaje" in r["descripcion"].lower() for r in rechazadas), "Debe fallar por puntaje crediticio bajo."
 
 
 
 # MAIN
 def main():
     print("\n SISTEMA EXPERTO - PRECALIFICADOR DE CRÉDITO 🧩\n")
-    print("--- 1. Ejecución del Sistema Experto ---")
     for cliente in clientes_obj:
         resultados = evaluar_cliente(cliente)
         mostrar_resultados(cliente, resultados)
-
-    # 2. Ejecución de los Tests
-    print("--- 2. Ejecución de las Pruebas Unitarias ---")
-    test_inferencia_correcta()
-    test_caso_borde()
-    test_explicacion()
 
 if __name__ == "__main__":
     main()

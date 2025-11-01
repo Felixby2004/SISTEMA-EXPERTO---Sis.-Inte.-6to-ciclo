@@ -1,7 +1,12 @@
+# PROGRAMA EN STREAMLIT
+
+import pytest
 import streamlit as st
+import time
 from knowledge.base_conocimiento import reglas
-from engine.base_hechos import Cliente, clientes_obj
+from engine.base_hechos import clientes_obj
 from rule_engine import Rule
+from principal import test_inferencia_correcta, test_caso_borde, test_explicacion
 
 st.set_page_config(page_title="Precalificador de Créditos BCP", page_icon="💳", layout="wide")
 
@@ -55,14 +60,6 @@ st.markdown("""
         margin-top: 20px;
         padding-top: 5px;
     }
-    .motivo-card {
-        border: 2px solid #001C66;
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 10px;
-        background-color: #FFFFFF;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
     .motivo-header {
         display: flex;
         justify-content: space-between;
@@ -107,6 +104,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+
 # titulo
 col_logo, col_titulo = st.columns([1, 4])
 with col_logo:
@@ -115,7 +113,7 @@ with col_titulo:
     st.markdown("<div class='titulo-bcp'>Precalificador de Créditos</div>"
                 "<div class='subtitulo'>Sistema experto basado en reglas del Banco de Crédito del Perú</div>"
                 ,unsafe_allow_html=True)
-    
+
 with st.expander("Más Información"):
         st.markdown(
             """
@@ -162,6 +160,7 @@ with st.expander("Más Información"):
             , unsafe_allow_html=True
         )
 
+st.markdown("##### ⚠️ AVISO: No uso directo en producción. Este sistema da resultados pero quien tiene la decisión final es un experto en finanzas.")
 
 st.markdown("<hr style='border-bottom: 1px solid #F47A31;'>", unsafe_allow_html=True)
 
@@ -169,39 +168,39 @@ modo = st.radio("Seleccionar vista:", ["👥 Lista de Clientes", "🧪 Tests"], 
 
 
 def evaluar_cliente(cliente):
-        resultados = []
-        datos = cliente.to_dict()
-        for r in reglas:
-            regla = Rule(r["expresion"])
-            cumple = regla.matches(datos)
-            resultados.append({
-                "codigo": r["codigo"],
-                "descripcion": r["descripcion"],
-                "cumple": cumple,
-                "severidad": r["severidad"],
-                "recomendacion": r["recomendacion"]
-            })
-        return resultados
+    resultados = []
+    datos = cliente.to_dict()
+    for r in reglas:
+        regla = Rule(r["expresion"])
+        cumple = regla.matches(datos)
+        resultados.append({
+            "codigo": r["codigo"],
+            "descripcion": r["descripcion"],
+            "cumple": cumple,
+            "severidad": r["severidad"],
+            "recomendacion": r["recomendacion"]
+        })
+    return resultados
+
+
+def obtener_conclusion(resultados):
+    niveles = {"alta": 3, "media": 2, "baja": 1}
+    rechazadas = [r for r in resultados if not r["cumple"]]
+    rechazadas.sort(key=lambda r: niveles.get(r["severidad"].lower(), 0), reverse=True)
+
+    if not rechazadas:
+        return "✅ APROBADO", []
+    severidad_max = rechazadas[0]["severidad"].lower()
+    if severidad_max == "alta":
+        estado = "❌ NO APROBADO"
+    elif severidad_max == "media":
+        estado = "🚫 NO APROBADO (riesgo moderado)"
+    else:
+        estado = "⚠️ PRE-APROBADO CON OBSERVACIONES"
+    return estado, rechazadas
+
 
 if modo == "👥 Lista de Clientes":
-
-    def obtener_conclusion(resultados):
-        niveles = {"alta": 3, "media": 2, "baja": 1}
-        rechazadas = [r for r in resultados if not r["cumple"]]
-        rechazadas.sort(key=lambda r: niveles.get(r["severidad"].lower(), 0), reverse=True)
-
-        if not rechazadas:
-            return "✅ APROBADO", []
-        severidad_max = rechazadas[0]["severidad"].lower()
-        if severidad_max == "alta":
-            estado = "❌ NO APROBADO"
-        elif severidad_max == "media":
-            estado = "🚫 NO APROBADO (riesgo moderado)"
-        else:
-            estado = "⚠️ PRE-APROBADO CON OBSERVACIONES"
-        return estado, rechazadas
-
-
     # lista de clientes
     st.subheader("👥 Lista de clientes")
     nombres = [c.nombre for c in clientes_obj]
@@ -230,7 +229,7 @@ if modo == "👥 Lista de Clientes":
         st.markdown(f"<span class='dato-label'>Estado civil:</span> <span class='dato-valor'>{cliente_obj.estado_civil.capitalize()}</span>", unsafe_allow_html=True)
 
 
-    # --- EVALUACIÓN DENTRO DEL CLIENTE BOX ---
+    # evaluar al cliente
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🔍 Evaluación del cliente")
 
@@ -241,9 +240,12 @@ if modo == "👥 Lista de Clientes":
         if "✅ APROBADO" in estado:
             st.success(f"{estado} - El cliente cumple con todas las políticas crediticias del BCP.")
         elif "❌ NO APROBADO" in estado:
-            st.error(f"{estado} - El cliente no cumple las condiciones necesarias.")
+            st.error(f"{estado} - El cliente no cumple las políticas crediticias del BCP.")
+        elif "🚫 NO APROBADO (riesgo moderado)" in estado:
+            st.info(f"{estado} - El cliente no cumple las políticas crediticias del BCP con un riesgo moderado.")
         else:
-            st.warning(f"{estado}")
+            st.warning(f"{estado} - El cliente esta pre-aprobado con algunas observaciones.")
+
 
         if rechazadas:
             # tarjetas
@@ -265,54 +267,72 @@ if modo == "👥 Lista de Clientes":
                 st.markdown(motivo_html, unsafe_allow_html=True)
 
 
-elif modo == "🧪 Tests":
-    st.subheader("🧪 Pruebas automáticas")
-    
-    # --- Función común para evaluar ---
-    def evaluar_y_mostrar(cliente, titulo_test):
-        resultados = evaluar_cliente(cliente)
-        rechazadas = [r for r in resultados if not r["cumple"]]
+else:
+    st.subheader("🧪 Tests (Pruebas automáticas)")
 
-        st.markdown(f"<h4 style='color:#F47A31; margin-bottom:10px;'>{titulo_test}</h4>", unsafe_allow_html=True)
-        st.markdown(f"**Cliente:** {cliente.nombre} — **Edad:** {cliente.edad} años — **Ingresos:** S/ {cliente.ingresos:,.2f}", unsafe_allow_html=True)
+    # los 3 tests
+    def ejecutar_tests_pytest():
+        inicio = time.time()
+        tests = [
+        ("test_inferencia_correcta", test_inferencia_correcta),
+        ("test_caso_borde", test_caso_borde),
+        ("test_explicacion", test_explicacion)
+        ]
 
-        if not rechazadas:
-            st.success("✅ APROBADO - El cliente cumple con todas las políticas crediticias del BCP.")
-        else:
-            st.error("❌ NO APROBADO - El cliente no cumple las condiciones necesarias.")
-            for r in rechazadas:
-                sev = r["severidad"].lower()
-                clase = "sev-alta" if sev == "alta" else "sev-media" if sev == "media" else "sev-baja"
-                motivo_html = f"""
-                <div class="cliente-box">
-                    <div class="motivo-header">
-                        <div class="motivo-descripcion">{r['descripcion']}</div>
-                        <div class="motivo-severidad {clase}"> Severidad: {r['severidad'].capitalize()}</div>
-                    </div>
-                    <div class="motivo-recomendacion">
-                        <span><b>Recomendación:</b></span> {r['recomendacion']}
-                    </div>
-                </div>
-                """
-                st.markdown(motivo_html, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        passed = 0
+        
+        simulacion = """
+            <div class="cliente-box" style="background-color: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 14px;">
+            <pre style="margin: 0; white-space: pre-wrap; word-break: break-all; color: #d4d4d4;">
+        """
+        
+        simulacion += "collected 3 items<br><br>"
+        time.sleep(0.6)
 
-    # --- TEST 1 ---
-    if st.button("Test 1: Inferencia correcta (NO APROBADO por Mora)", use_container_width=True):
-        cliente = Cliente("Juan Pérez", 35, 2500, 500, True, 5, "dependiente", True, 700, 3000, ahorros=500, empleo_estable=True, estado_civil="casado")
-        evaluar_y_mostrar(cliente, "Test 1: Inferencia Correcta (Mora detectada)")
-
-    # --- TEST 2 ---
-    if st.button("Test 2: Caso Borde (APROBADO justo)", use_container_width=True):
-        cliente = Cliente("María López", 28, 1500, 200, False, 2, "independiente", True, 750, 2000, ahorros=600, empleo_estable=True, estado_civil="soltero")
-        evaluar_y_mostrar(cliente, "Test 2: Caso Borde (Aprobación ajustada)")
-
-    # --- TEST 3 ---
-    if st.button("Test 3: Explicación (Puntaje bajo)", use_container_width=True):
-        cliente = Cliente("Pedro Ruiz", 40, 1000, 200, False, 10, "independiente", False, 600, 500, ahorros=1000, empleo_estable=True, estado_civil="casado")
-        evaluar_y_mostrar(cliente, "Test 3: Explicación del sistema (Puntaje bajo)")
+        for nombre, funcion in tests:
+            try:
+                # Ejecutamos la función. Si hay un 'assert' fallido, salta al except.
+                funcion()
+                estado_texto = f'PASSED'
+                estado_html = f'<span style="color:#6aa84f; font-weight:700;">{estado_texto}</span><br>'
+                passed += 1
+            except AssertionError as e:
+                estado_texto = f'FAILED'
+                estado_html = f'<span style="color:#ffc107; font-weight:700;">{estado_texto}</span><br>'
+            except NameError:
+                estado_html = f'<span style="color:#ffc107; font-weight:700;">ERROR (No definido)</span><br>'
 
 
+            linea_test = f"principal.py::{nombre}"
+            
+            espacios_necesarios = 50 - len(linea_test) 
+            
+            simulacion += f"{linea_test}{' ' * espacios_necesarios}{estado_html}\n"
+            
+            time.sleep(0.4)
 
-# --- FOOTER ---
+        # 4. Resumen final
+        duracion = time.time() - inicio
+        
+        # Línea de separación verde de consola
+        linea_separadora = f'<span style="color:#6aa84f;">{"="*55}</span>'
+        simulacion += f"<br>{linea_separadora}\n"
+        
+        # Texto del resumen final
+        resumen_final = f'{passed} passed in {duracion:.2f}s'
+        simulacion += f'<span style="color:#6aa84f; font-weight:700;">{resumen_final}</span>\n'
+        simulacion += f'{linea_separadora}\n'
+
+        simulacion += "</pre></div>"
+
+        st.markdown(simulacion, unsafe_allow_html=True)
+
+
+    if st.button("▶️ Ejecutar pruebas (pytest simulado)", use_container_width=True):
+        with st.spinner("Ejecutando tests..."):
+            time.sleep(0.8)
+            ejecutar_tests_pytest()
+
+
+# footer
 st.markdown("<div class='footer'>Este sistema experto utiliza Bases de conocimiento del Banco de Crédito del Perú (BCP).</div>", unsafe_allow_html=True)
