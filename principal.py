@@ -62,21 +62,21 @@ def mostrar_resultados(cliente, resultados):
 
 # TEST (pytest)
 def test_inferencia_correcta():
-    cliente = Cliente("Juan Pérez", 35, 2500, 500, True, 5, "dependiente", True, 700, 3000, ahorros=500, empleo_estable=True, estado_civil="casado")
+    cliente = Cliente("Juan Pérez", 35, 2500, 500, 1, 5, "dependiente", True, 700, 3000, ahorros=500, empleo_estable=True, estado_civil="casado")
     resultados = evaluar_cliente(cliente)
     rechazadas = [r for r in resultados if not r["cumple"]]
     assert any("mora" in r["descripcion"].lower() for r in rechazadas), "Debería fallar por MORA activa."
 
 
 def test_caso_borde():
-    cliente = Cliente("María López", 28, 1500, 200, False, 2, "independiente", True, 750, 2000, ahorros=600, empleo_estable=True, estado_civil="soltero")
+    cliente = Cliente("María López", 21, 1200, 480, 0, 1, "independiente", True, 750, 4800, ahorros=600, empleo_estable=True, estado_civil="soltero")
     resultados = evaluar_cliente(cliente)
     rechazadas = [r for r in resultados if not r["cumple"]]
     assert len(rechazadas) == 0, "Debería ser APROBADO (sin fallas)."
 
 
 def test_explicacion():
-    cliente = Cliente("Pedro Ruiz", 40, 1000, 200, False, 10, "independiente", False, 600, 500, ahorros=1000, empleo_estable=True, estado_civil="casado")
+    cliente = Cliente("Pedro Ruiz", 40, 1000, 200, 0, 10, "independiente", False, 600, 500, ahorros=1000, empleo_estable=True, estado_civil="casado")
     resultados = evaluar_cliente(cliente)
     rechazadas = [r for r in resultados if not r["cumple"]]
     assert any("puntaje" in r["descripcion"].lower() for r in rechazadas), "Debe fallar por puntaje crediticio bajo."
